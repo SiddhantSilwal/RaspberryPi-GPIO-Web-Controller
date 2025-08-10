@@ -4,18 +4,18 @@ A complete web-based GPIO controller for Raspberry Pi with real-time monitoring,
 
 ## One-Step Installation
 
-Run the following code in your Raspberry Pi
+Run the following command in your Raspberry Pi terminal
 
 ```bash
-curl -sL https://raw.githubusercontent.com/SiddhantSilwal/RaspberryPI-GPIO-Web-Controller/refs/heads/main/webinstaller.sh | bash
+curl -sL https://github.com/your/repo.git | bash
 ```
 
 ## Alternative Installation Methods
 
-For custom
+For custom installation to review and change python scripts as per your setup, clone and install the git repo as follows
 
 ```bash
-git clone https://github.com/SiddhantSilwal/RaspberryPI-GPIO-Web-Controller.git
+git clone https://github.com/your/repo.git
 cd RaspberryPI-GPIO-Web-Controller/
 chmod +x ./install.sh
 ./intstall.sh
@@ -24,6 +24,7 @@ chmod +x ./install.sh
 ## Requirements
 
 - Python 3.7 or higher
+- Curl
 - Packages listed in `requirements.txt`
 
 ## Running the Application
@@ -37,7 +38,7 @@ For default installation the script will autostart on boot
 If autostart is disabled at installation type the following command to start the server
 
 ```bash
-$ rwgpio
+$ webgpio
 ```
 
 ### Access the Interface:
@@ -60,7 +61,17 @@ Final/
         └── app.js
 ```
 
-## API Endpoints
+## Features
+
+- **Visual GPIO Grid**: Real-time status display of all GPIO pins
+- **Input Monitoring**: Live monitoring with event logging for input pins with pull-resistor options
+- **Output Control**: Set Output signal to HIGH, LOW or send a pulse
+- **PWM Control**: Hardware and software PWM with frequency and duty cycle control
+- **Real-time Updates**: Server-Sent Events for live status updates
+- **Activity Logging**: Comprehensive logging of all user actions and system events
+- **Modern Interface**: User friendly design that works on desktop, tablet, and mobile devices
+
+### API Endpoints
 
 - `GET /api/pins` - Get status of all GPIO pins
 - `POST /api/mode` - Configure pin mode (input/output)
@@ -70,7 +81,7 @@ Final/
 - `POST /api/reset` - Reset all pins to safe defaults
 - `GET /api/events` - Server-Sent Events stream for real-time updates
 
-## Keyboard Shortcuts
+### Keyboard Shortcuts
 
 - `Ctrl+D` (or `Cmd+D` on Mac) - Toggle dark mode
 - `Ctrl+R` (or `Cmd+R` on Mac) - Reset all pins
