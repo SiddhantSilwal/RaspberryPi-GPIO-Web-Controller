@@ -24,9 +24,8 @@ main()
 instl()
 {
     sudo apt update && sudo apt upgrade
-    sudo apt install -y python3 python3-flask
-    sudo mkdir /usr/share/RaspiWebGPIO
-    sudo cp -r AppData/* /usr/share/RaspiWebGPIO
+    sudo apt install -y python3 python3-flask git
+    sudo git clone https://github.com/SiddhantSilwal/RaspberryPI-GPIO-Web-Controller.git /usr/share/RaspiWebGPIO
     chmod +x /usr/share/RaspiWebGPIO/app.py
 
     sudo ufw allow 5000
