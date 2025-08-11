@@ -1,5 +1,4 @@
 #!/bin/bash
-
 IP=$(hostname -I | awk '{print $1}')
 Prt=5000
 PYTHON_SCRIPT="/usr/share/RaspiWebGPIO/app.py"
@@ -10,11 +9,14 @@ echo $(cd)
 main()
 {
     printf "Welcome to\033[1;34m 8085-Simulator installer by Siddhant Silwal \033[0m \n"
-    printf "\033[1mDo you want to Install or Uninstall?\n 1)INSTALL \n 2)uninstall\033[0m \n" 
+    printf "\033[1mDo you want to Install or Uninstall?\n [I]install \n [u]uninstall\033[0m \n" 
     read choice
     case $choice in
-        1 ) instl; ;;
-        2 ) unstl; ;;
+        i ) instl; ;;
+        u ) unstl; ;;
+        I ) instl; ;;
+        install ) instl; ;;
+        uninstall ) unstl; ;;
         "") instl; ;;
         * ) echo "Error: Invalid Option"; break;;
     esac
@@ -24,11 +26,10 @@ main()
 instl()
 {
     sudo apt update && sudo apt upgrade
-    sudo apt install -y python3 python3-flask git
+    sudo apt install python3 python3-flask git
     sudo mkdir /usr/share/RaspiWebGPIO
     sudo cp -r AppData/* /usr/share/RaspiWebGPIO
     chmod +x /usr/share/RaspiWebGPIO/app.py
-
     sudo ufw allow 5000
 
     printf "\033[1mDo you want to autostart on boot? [Y]yes [n]no\033[0m \n" 
