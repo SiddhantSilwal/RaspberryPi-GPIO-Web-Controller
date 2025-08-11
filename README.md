@@ -7,7 +7,7 @@ A complete web-based GPIO controller for Raspberry Pi with real-time monitoring,
 Run the following command in your Raspberry Pi terminal
 
 ```bash
-curl -sL https://github.com/your/repo.git | bash
+curl -sL https://raw.githubusercontent.com/SiddhantSilwal/RaspberryPI-GPIO-Web-Controller/refs/heads/main/webinstaller.sh | bash
 ```
 
 ## Alternative Installation Methods
@@ -15,7 +15,7 @@ curl -sL https://github.com/your/repo.git | bash
 For custom installation to review and change python scripts as per your setup, clone and install the git repo as follows
 
 ```bash
-git clone https://github.com/your/repo.git
+git clone https://github.com/SiddhantSilwal/RaspberryPI-GPIO-Web-Controller.git
 cd RaspberryPI-GPIO-Web-Controller/
 chmod +x ./install.sh
 ./intstall.sh
