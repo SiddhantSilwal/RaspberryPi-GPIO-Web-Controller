@@ -8,7 +8,7 @@ SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 echo $(cd)
 main()
 {
-    printf "Welcome to\033[1;34m 8085-Simulator installer by Siddhant Silwal \033[0m \n"
+    printf "Welcome to\033[1;34m Raspi Web GPIO installer \033[0m \n"
     printf "\033[1mDo you want to Install or Uninstall?\n [I]install \n [u]uninstall\033[0m \n" 
     read choice
     case $choice in
