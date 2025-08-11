@@ -176,7 +176,7 @@ body {
 }
 
 .status-dot.connected {
-  background: var(--status-active);
+  background: var(--status-high);
 }
 
 .status-dot.error {
