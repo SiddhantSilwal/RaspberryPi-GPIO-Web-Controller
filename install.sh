@@ -33,8 +33,8 @@ instl()
     sudo ufw allow 5000
 
     printf "\033[1mDo you want to autostart on boot? [Y]yes [n]no\033[0m \n" 
-
-        case $choice in
+    read $option
+    case $option in
         y) autostart; ;;
         n) create_alias; ;;
         yes) autostart; ;;
@@ -91,3 +91,5 @@ unstl()
     printf "\033[1;32mRaspi-Web-GPIO-Controller uninstalled successfully \033[0m \n"
 
 }
+
+main
