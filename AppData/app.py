@@ -321,21 +321,25 @@ def write_pin():
             
         elif action == 'pulse':
             duration = float(data.get('duration', 100)) / 1000.0  # Convert ms to seconds
+            loops = int(data.get('loops', 5))
             
             # Manual pulse implementation for all backends
             if GPIO_BACKEND == 'gpiozero':
                 device = pin_states[pin]['device']
-                device.on()
-                time.sleep(duration)
-                device.off()
+                for _ in range(loops):
+                    device.on()
+                    time.sleep(duration)
+                    device.off()
             elif GPIO_BACKEND == 'RPi.GPIO':
-                GPIO.output(pin, GPIO.HIGH)
-                time.sleep(duration)
-                GPIO.output(pin, GPIO.LOW)
+                for _ in range(loops):
+                    GPIO.output(pin, GPIO.HIGH)
+                    time.sleep(duration)
+                    GPIO.output(pin, GPIO.LOW)
             else:  # mock
-                GPIO.output(pin, 1)
-                time.sleep(duration)
-                GPIO.output(pin, 0)
+                for _ in range(loops):
+                    GPIO.output(pin, 1)
+                    time.sleep(duration)
+                    GPIO.output(pin, 0)
             
             pin_states[pin]['value'] = 0  # Pulse ends in LOW state
             log_event(f"Pin {pin} pulsed for {duration*1000:.1f}ms")

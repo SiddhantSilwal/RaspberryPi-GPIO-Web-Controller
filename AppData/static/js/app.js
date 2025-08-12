@@ -598,9 +598,15 @@ class GPIOController {
     async sendPulse() {
         const pin = this.elements.outputPin.value;
         const duration = parseFloat(this.elements.pulseDuration.value);
-        
+        const loops = parseFloat(this.elements.loops.value);
+
         if (!pin) {
             this.showError('Please select an output pin');
+            return;
+        }
+
+        if (loops < 1 || loops > 20) {
+            this.showError('Number of pulses must be between 1 and 20');
             return;
         }
         
@@ -618,7 +624,8 @@ class GPIOController {
                 body: JSON.stringify({ 
                     pin: parseInt(pin), 
                     action: 'pulse', 
-                    duration: duration 
+                    duration: duration,
+                    loops: loops
                 })
             });
             
