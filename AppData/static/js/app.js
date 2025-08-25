@@ -44,6 +44,7 @@ class GPIOController {
             resetAllBtn: document.getElementById('resetAllBtn'),
             connectionStatus: document.getElementById('connectionStatus'),
             backendStatus: document.getElementById('backendStatus'),
+            loops: document.getElementById('loops'),
             
             // GPIO grid
             gpioGrid: document.getElementById('gpioGrid'),
@@ -727,6 +728,7 @@ class GPIOController {
             this.pwmStates[pin] = { frequency, duty_cycle: dutyCycle };
             this.elements.stopPwmBtn.disabled = false;
             this.elements.pwmStatus.textContent = `PWM Active: ${frequency}Hz, ${dutyCycle}%`;
+            this.elements.startPwmBtn.textContent = 'Update PWM';
             this.elements.pwmStatus.classList.add('active');
             
             await this.refreshPinStatus();
@@ -768,6 +770,7 @@ class GPIOController {
             delete this.pwmStates[pin];
             this.elements.stopPwmBtn.disabled = true;
             this.elements.pwmStatus.textContent = 'PWM Stopped';
+            this.elements.startPwmBtn.textContent = 'Start PWM';
             this.elements.pwmStatus.classList.remove('active');
             
             await this.refreshPinStatus();
