@@ -1,7 +1,4 @@
-/**
- * GPIO Controller JavaScript Application
- * Raspberry Pi GPIO Control Interface
- */
+
 
 class GPIOController {
     constructor() {
@@ -21,9 +18,7 @@ class GPIOController {
         this.init();
     }
     
-    /**
-     * Initialize the application
-     */
+
     init() {
         this.cacheElements();
         this.setupEventListeners();
@@ -34,9 +29,7 @@ class GPIOController {
         this.refreshPinStatus();
     }
     
-    /**
-     * Cache frequently used DOM elements
-     */
+// Cache for frequently used DOMs
     cacheElements() {
         this.elements = {
             // Header elements
@@ -81,10 +74,8 @@ class GPIOController {
             clearLogBtn: document.getElementById('clearLogBtn')
         };
     }
-    
-    /**
-     * Setup all event listeners
-     */
+
+// Event Listeners
     setupEventListeners() {
         // Header controls
         this.elements.darkModeToggle.addEventListener('click', () => this.toggleTheme());
@@ -119,9 +110,7 @@ class GPIOController {
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
     }
     
-    /**
-     * Handle keyboard shortcuts
-     */
+//Keyboard shorcuts
     handleKeyboard(e) {
         if (e.ctrlKey || e.metaKey) {
             switch (e.key) {
@@ -137,18 +126,13 @@ class GPIOController {
         }
     }
     
-    /**
-     * Load and apply saved theme
-     */
+//Theme (Dark/Light)
     loadTheme() {
         const savedTheme = localStorage.getItem('gpio-theme') || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
         this.updateThemeIcon(savedTheme);
     }
     
-    /**
-     * Toggle between light and dark themes
-     */
     toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -158,9 +142,7 @@ class GPIOController {
         this.updateThemeIcon(newTheme);
     }
     
-    /**
-     * Update theme toggle icon
-     */
+
     updateThemeIcon(theme) {
         const sunIcon = this.elements.darkModeToggle.querySelector('.sun-icon');
         const moonIcon = this.elements.darkModeToggle.querySelector('.moon-icon');
@@ -174,9 +156,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Create the GPIO pin grid
-     */
+    //Gpio Pin grid
     createGPIOGrid() {
         this.elements.gpioGrid.innerHTML = '';
         
@@ -206,17 +186,13 @@ class GPIOController {
         });
     }
     
-    /**
-     * Select a pin for configuration
-     */
+    //Pin Select
     selectPinForConfig(pin) {
         this.elements.configPin.value = pin;
         this.elements.configPin.focus();
     }
     
-    /**
-     * Populate dropdown menus
-     */
+    //For dropdown mwnu
     populateDropdowns() {
         // Configuration pin dropdown
         this.elements.configPin.innerHTML = '<option value="">Select pin...</option>';
@@ -247,9 +223,7 @@ class GPIOController {
         });
     }
     
-    /**
-     * Update dropdowns based on pin configurations
-     */
+    //Dropdown Update
     updateDropdowns() {
         // Update output pin dropdown
         const outputPins = Object.keys(this.pins).filter(pin => 
@@ -284,17 +258,14 @@ class GPIOController {
         });
     }
     
-    /**
-     * Handle pin mode change in configuration
-     */
+    // Handle pin mode change in configuration
     handleModeChange() {
         const mode = document.querySelector('input[name="pinMode"]:checked').value;
         this.elements.pullResistorGroup.style.display = mode === 'input' ? 'block' : 'none';
     }
     
-    /**
-     * Handle output pin selection change
-     */
+    //Handles output pin selection change
+    
     handleOutputPinChange() {
         const pin = this.elements.outputPin.value;
         const hasPin = pin !== '';
@@ -304,9 +275,8 @@ class GPIOController {
         this.elements.pulseBtn.disabled = !hasPin;
     }
     
-    /**
-     * Handle input pin selection change
-     */
+    // Handles input pin selection change
+    
     handleInputPinChange() {
         const pin = this.elements.inputPin.value;
         const hasPin = pin !== '';
@@ -323,9 +293,8 @@ class GPIOController {
         }
     }
     
-    /**
-     * Handle PWM pin selection change
-     */
+    // Handles PWM pin selection change
+     
     handlePwmPinChange() {
         const pin = this.elements.pwmPin.value;
         const hasPin = pin !== '';
@@ -344,17 +313,13 @@ class GPIOController {
             this.elements.pwmStatus.classList.remove('active');
         }
     }
-    
-    /**
-     * Update duty cycle display
-     */
+
+    // Updates duty cycle display
     updateDutyCycleDisplay() {
         this.elements.dutyCycleValue.textContent = this.elements.pwmDutyCycle.value;
     }
     
-    /**
-     * Connect to server-sent events stream
-     */
+    // Connect to server-sent events stream
     connectEventStream() {
         if (this.eventSource) {
             this.eventSource.close();
@@ -389,9 +354,7 @@ class GPIOController {
         };
     }
     
-    /**
-     * Handle server-sent events
-     */
+    //Handles server sent events
     handleServerEvent(data) {
         switch (data.type) {
             case 'heartbeat':
@@ -413,10 +376,8 @@ class GPIOController {
                 break;
         }
     }
-    
-    /**
-     * Update connection status indicator
-     */
+
+    // Connection status indicator update
     updateConnectionStatus(connected, error = false) {
         const statusDot = this.elements.connectionStatus;
         const statusText = this.elements.backendStatus;
@@ -434,10 +395,8 @@ class GPIOController {
             statusText.textContent = 'Disconnected';
         }
     }
-    
-    /**
-     * Refresh pin status from server
-     */
+
+    // Refresh-Reset Pins
     async refreshPinStatus() {
         try {
             const response = await fetch('/api/pins');
@@ -459,9 +418,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Update GPIO pin display
-     */
+    // Update GPIO pin display
     updatePinDisplay() {
         Object.keys(this.pins).forEach(pin => {
             const pinData = this.pins[pin];
@@ -513,9 +470,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Update input value display
-     */
+    // Update input value display
     updateInputValue(pin) {
         const pinData = this.pins[pin];
         if (pinData && pinData.mode === 'input') {
@@ -524,9 +479,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Configure a pin
-     */
+    // Configure a pin
     async configurePin() {
         const pin = this.elements.configPin.value;
         const mode = document.querySelector('input[name="pinMode"]:checked').value;
@@ -560,9 +513,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Set output pin value
-     */
+    // Set output pin value
     async setOutput(action) {
         const pin = this.elements.outputPin.value;
         
@@ -593,9 +544,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Send pulse to output pin
-     */
+    // Send pulse to output pin
     async sendPulse() {
         const pin = this.elements.outputPin.value;
         const duration = parseFloat(this.elements.pulseDuration.value);
@@ -644,9 +593,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Toggle input monitoring
-     */
+    // Toggle input monitoring
     async toggleInputMonitor() {
         const pin = this.elements.inputPin.value;
         
@@ -688,9 +635,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Start PWM on selected pin
-     */
+    // Start PWM on selected pin
     async startPWM() {
         const pin = this.elements.pwmPin.value;
         const frequency = parseFloat(this.elements.pwmFrequency.value);
@@ -739,9 +684,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Stop PWM on selected pin
-     */
+    // Stop PWM on selected pin
     async stopPWM() {
         const pin = this.elements.pwmPin.value;
         
@@ -781,9 +724,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Reset all pins to safe defaults
-     */
+    // Reset all pins to safe defaults
     async resetAllPins() {
         if (!confirm('This will reset all configured pins to safe defaults. Continue?')) {
             return;
@@ -822,9 +763,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Log activity message (filtered for important events only)
-     */
+    // Log activity message (filtered for important events only)
     logActivity(message, level = 'info', timestamp = null) {
         // Filter out UI-only changes that aren't relevant for GPIO operations
         const uiOnlyMessages = [
@@ -883,9 +822,7 @@ class GPIOController {
         }
     }
     
-    /**
-     * Log input event to input monitor
-     */
+    // Log input event to input monitor
     logInputEvent(message, timestamp) {
         if (this.elements.inputEventLog.children.length === 0) {
             this.elements.inputEventLog.innerHTML = ''; // Clear any placeholder text
@@ -908,17 +845,13 @@ class GPIOController {
         }
     }
     
-    /**
-     * Clear activity log
-     */
+    // Clear activity log
     clearActivityLog() {
         this.elements.activityLog.innerHTML = '';
         // Don't log the clearing action itself since it's UI-only
     }
     
-    /**
-     * Show error message
-     */
+    // Show error message
     showError(message) {
         this.logActivity(`Error: ${message}`, 'error');
         
@@ -926,9 +859,7 @@ class GPIOController {
         console.error('GPIO Controller Error:', message);
     }
     
-    /**
-     * Cleanup resources when page unloads
-     */
+    // Cleanup resources when page unloads
     cleanup() {
         if (this.eventSource) {
             this.eventSource.close();

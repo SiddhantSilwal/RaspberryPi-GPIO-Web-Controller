@@ -1,3 +1,5 @@
+# Installation Script for Raspberry Pi GPIO Web Controller
+
 #!/bin/bash
 IP=$(hostname -I | awk '{print $1}')
 Prt=5000
@@ -75,6 +77,7 @@ autostart()
 }
 
 create_alias() {
+    chmod +x /usr/share/RaspiWebGPIO/app.py
     local ALIAS_NAME="rwgpio"
     local SCRIPT_PATH="$PYTHON_SCRIPT"
     echo "alias $ALIAS_NAME='python3 \"$SCRIPT_PATH\"'" >> ~/.bashrc
