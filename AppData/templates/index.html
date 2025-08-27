@@ -14,12 +14,6 @@
       type="image/svg+xml"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='15,0 50,20 15,40' style='fill:%2375A52D'/><polygon points='85,0 50,20 85,60' style='fill:%2375A52D'/><circle cx='50' cy='60' r='40' fill='%23C51E3A'/><rect x='45' y='50' width='10' height='40' fill='white' rx='5'/><ellipse cx='50' cy='55' rx='18' ry='11' fill='white'/></svg>"
     />
-
-    <!-- <link
-      rel="icon"
-      type="image/svg+xml"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23C51E3A'/><rect x='35' y='30' width='30' height='40' fill='white' rx='5'/></svg>"
-    /> -->
   </head>
   <body>
     <div class="container">
@@ -183,6 +177,19 @@
               max="10000"
             />
           </div>
+
+          <div class="form-group">
+            <label for="loops">No. of Pulses:</label>
+            <input
+              type="number"
+              id="loops"
+              class="form-control"
+              value="5"
+              min="1"
+              max="20"
+            />
+          </div>
+
           <button id="pulseBtn" class="btn btn-warning" disabled>
             Send Pulse
           </button>
@@ -223,12 +230,7 @@
 
         <!-- PWM Control -->
         <section class="control-panel">
-          <h3>
-            <!-- <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M2 12C2 16.97 6.03 21 11 21C13.39 21 15.68 20.06 17.4 18.4L15.9 16.9C14.63 18.25 12.86 19 11 19C4.76 19 2 12.77 2 12S4.76 5 11 5V7L16 4L11 1V3C5.03 3 2 7.03 2 12Z"/>
-                    </svg> -->
-            〰 PWM Control
-          </h3>
+          <h3>〰 PWM Control</h3>
 
           <div class="form-group">
             <label for="pwmPin">PWM Pin:</label>

@@ -1,6 +1,6 @@
 # Raspberry Pi Web GPIO Controller
 
-A complete web-based GPIO controller for Raspberry Pi with real-time monitoring, PWM control, and a modern interface.
+A complete web-based remote GPIO controller for Raspberry Pi with real-time monitoring, PWM control, and a modern interface.
 
 ## One-Step Installation
 

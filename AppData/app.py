@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 
 from flask import Flask, render_template, request, jsonify, Response
@@ -320,22 +319,28 @@ def write_pin():
             log_event(f"Pin {pin} set to {action.upper()}")
             
         elif action == 'pulse':
-            duration = float(data.get('duration', 100)) / 1000.0  # Convert ms to seconds
-            
-            # Manual pulse implementation for all backends
+            duration = float(data.get('duration', 100)) / 1000.0  # ON time in seconds
+            loops = int(data.get('loops', 5))
+            off_time = duration  
             if GPIO_BACKEND == 'gpiozero':
                 device = pin_states[pin]['device']
-                device.on()
-                time.sleep(duration)
-                device.off()
+                for _ in range(loops):
+                    device.on()
+                    time.sleep(duration)
+                    device.off()
+                    time.sleep(off_time)
             elif GPIO_BACKEND == 'RPi.GPIO':
-                GPIO.output(pin, GPIO.HIGH)
-                time.sleep(duration)
-                GPIO.output(pin, GPIO.LOW)
+                for _ in range(loops):
+                    GPIO.output(pin, GPIO.HIGH)
+                    time.sleep(duration)
+                    GPIO.output(pin, GPIO.LOW)
+                    time.sleep(off_time)
             else:  # mock
-                GPIO.output(pin, 1)
-                time.sleep(duration)
-                GPIO.output(pin, 0)
+                for _ in range(loops):
+                    GPIO.output(pin, 1)
+                    time.sleep(duration)
+                    GPIO.output(pin, 0)
+                    time.sleep(off_time)
             
             pin_states[pin]['value'] = 0  # Pulse ends in LOW state
             log_event(f"Pin {pin} pulsed for {duration*1000:.1f}ms")
