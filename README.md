@@ -49,7 +49,7 @@ $ webgpio
 ## File Structure
 
 ```
-Final/
+/usr/share/RaspiWebGPIO/
 ├── app.py                      # Flask backend application
 ├── requirements.txt            # Python dependencies
 ├── templates/
