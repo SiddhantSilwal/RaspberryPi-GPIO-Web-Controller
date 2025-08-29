@@ -18,7 +18,7 @@ For custom installation to review and change python scripts as per your setup, c
 git clone https://github.com/SiddhantSilwal/RaspberryPi-GPIO-Web-Controller.git
 cd RaspberryPi-GPIO-Web-Controller/
 chmod +x ./install.sh
-./intstall.sh
+./install.sh
 ```
 
 ## Requirements
@@ -87,11 +87,3 @@ $ webgpio
 - `Ctrl+R` (or `Cmd+R` on Mac) - Reset all pins
 - `Enter`/`Space` on GPIO pins - Select for configuration
 - `Tab` - Navigate between controls
-
-## Browser Compatibility
-
-- Modern browsers with ES6+ support
-- Chrome/Chromium 70+
-- Firefox 65+
-- Safari 12+
-- Edge 79+
