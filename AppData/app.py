@@ -531,7 +531,7 @@ def graph_stream():
     Expects JSON:
     {
         'equation': str,      # Math expression (e.g., "1.65 + 1.65 * sin(x)")
-        'frequency': float,   # Update frequency in Hz
+        'frequency': float,   # Animation update frequency in Hz (1-10)
         'duration': float,    # Duration in seconds
         'pin': int,          # GPIO pin number
         'sample_rate': int,  # Samples per second
@@ -539,52 +539,63 @@ def graph_stream():
     }
     """
     import math
-    import numpy as np
     
     def generate():
+        pwm_device = None
+        start_time = time.time()
+        
         try:
             data = request.get_json()
             equation_str = data.get('equation', '1.65 + 1.65 * sin(x)')
             pin = int(data.get('pin', 18))
-            frequency = float(data.get('frequency', 1000))
-            duration = float(data.get('duration', 10))
+            animation_freq = float(data.get('frequency', 1.0))  # Animation speed (1-10 Hz)
             sample_rate = int(data.get('sample_rate', 60))
             x_max = float(data.get('x_max', 10))
             
+            # PWM frequency for GPIO hardware (much higher than animation frequency)
+            PWM_FREQUENCY = 1000  # 1kHz is good for LEDs/bulbs
             VOLTAGE_LIMIT = 3.3
+            
+            # Calculate timing based on animation frequency
+            update_interval = 1.0 / max(animation_freq, 0.1)  # Time between updates in seconds
             
             # Validate pin
             if pin not in VALID_PINS:
                 yield f"data: {json.dumps({'error': f'Invalid pin {pin}'})}\n\n"
                 return
             
-            # Setup PWM on the pin
+            # Setup PWM on the pin with proper frequency for hardware
             try:
                 cleanup_pin(pin)
                 
                 if GPIO_BACKEND == 'gpiozero':
-                    pwm_device = PWMOutputDevice(pin, frequency=frequency)
+                    pwm_device = PWMOutputDevice(pin, frequency=PWM_FREQUENCY)
+                    log_event(f"PWM device created on pin {pin} with {PWM_FREQUENCY}Hz frequency (gpiozero)")
                 elif GPIO_BACKEND == 'RPi.GPIO':
                     GPIO.setup(pin, GPIO.OUT)
-                    pwm_device = GPIO.PWM(pin, frequency)
-                    pwm_device.start(0)
+                    pwm_device = GPIO.PWM(pin, PWM_FREQUENCY)
+                    pwm_device.start(0)  # Start with 0% duty cycle
+                    log_event(f"PWM device created on pin {pin} with {PWM_FREQUENCY}Hz frequency (RPi.GPIO)")
                 else:  # mock
-                    pwm_device = GPIO.PWM(pin, frequency)
+                    pwm_device = GPIO.PWM(pin, PWM_FREQUENCY)
                     pwm_device.start(0)
+                    log_event(f"PWM device created on pin {pin} with {PWM_FREQUENCY}Hz frequency (mock)")
                 
                 pwm_devices[pin] = {
                     'device': pwm_device,
-                    'frequency': frequency,
+                    'frequency': PWM_FREQUENCY,
                     'duty_cycle': 0
                 }
                 
-                log_event(f"Graph streaming started on pin {pin} with equation: {equation_str}")
+                log_event(f"Graph streaming started on pin {pin} with equation: {equation_str}, animation_freq: {animation_freq}Hz")
                 
             except Exception as e:
-                yield f"data: {json.dumps({'error': f'Failed to setup PWM: {str(e)}'})}\n\n"
+                error_msg = f'Failed to setup PWM on pin {pin}: {str(e)}'
+                log_event(error_msg, 'error')
+                yield f"data: {json.dumps({'error': error_msg})}\n\n"
                 return
             
-            # Create safe evaluation namespace
+            # Create safe evaluation namespace for math expressions
             safe_dict = {
                 'sin': math.sin,
                 'cos': math.cos,
@@ -601,87 +612,118 @@ def graph_stream():
             try:
                 compiled_eq = compile(equation_str, '<string>', 'eval')
             except Exception as e:
-                yield f"data: {json.dumps({'error': f'Invalid equation: {str(e)}'})}\n\n"
-                cleanup_pin(pin)
-                return
-            
-            # Stream data points
-            samples = int(duration * sample_rate)
-            dt = duration / samples if samples > 0 else 1
-            
-            for i in range(samples):
-                try:
-                    # Calculate time position
-                    t = i * dt
-                    x = (t / duration) * x_max if duration > 0 else 0
-                    
-                    # Evaluate equation
-                    try:
-                        y = eval(compiled_eq, {'x': x, **safe_dict})
-                        if not isinstance(y, (int, float)):
-                            y = 0
-                    except:
-                        y = 0
-                    
-                    # Clamp voltage to safe range
-                    voltage = max(0, min(VOLTAGE_LIMIT, float(y) if y is not None else 0))
-                    
-                    # Calculate duty cycle (0-100%)
-                    duty_cycle = (voltage / VOLTAGE_LIMIT) * 100
-                    
-                    # Apply PWM
+                error_msg = f'Invalid equation: {str(e)}'
+                log_event(error_msg, 'error')
+                yield f"data: {json.dumps({'error': error_msg})}\n\n"
+                if pwm_device:
                     try:
                         if GPIO_BACKEND == 'gpiozero':
-                            pwm_device.value = duty_cycle / 100.0
-                        elif GPIO_BACKEND == 'RPi.GPIO':
-                            pwm_device.ChangeDutyCycle(duty_cycle)
-                        else:  # mock
-                            pwm_device.ChangeDutyCycle(duty_cycle)
-                        
-                        pwm_devices[pin]['duty_cycle'] = duty_cycle
-                    except Exception as e:
-                        log_event(f"Error updating PWM: {str(e)}", 'error')
-                    
-                    # Stream data point
-                    data_point = {
-                        't': t,
-                        'x': x,
-                        'y': voltage,
-                        'duty': duty_cycle
-                    }
-                    yield f"data: {json.dumps(data_point)}\n\n"
-                    
-                    # Respect sample rate timing
-                    time.sleep(dt)
-                    
-                except Exception as e:
-                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
-                    break
+                            pwm_device.close()
+                        else:
+                            pwm_device.stop()
+                    except:
+                        pass
+                return
             
-            # Stop PWM and cleanup
-            try:
-                if GPIO_BACKEND == 'gpiozero':
-                    pwm_device.close()
-                elif GPIO_BACKEND == 'RPi.GPIO':
-                    pwm_device.stop()
-                else:
-                    pwm_device.stop()
+            # Stream data points continuously
+            last_update = time.time()
+            x_position = 0
+            
+            while True:
+                current_time = time.time() - start_time
                 
-                del pwm_devices[pin]
-                log_event(f"Graph streaming stopped on pin {pin}")
-            except:
-                pass
+                # Check if it's time for an update based on animation frequency
+                if current_time - (last_update - start_time) >= update_interval:
+                    try:
+                        # Increment position based on animation frequency
+                        x_position += (current_time - (last_update - start_time)) * animation_freq / x_max
+                        x_position = x_position % 1.0  # Loop between 0 and 1
+                        
+                        # Map x_position to x value
+                        x = x_position * x_max
+                        
+                        # Evaluate equation
+                        try:
+                            y = eval(compiled_eq, {'x': x, **safe_dict})
+                            if not isinstance(y, (int, float)):
+                                y = 0
+                        except Exception as eval_err:
+                            log_event(f"Equation evaluation error: {str(eval_err)}", 'error')
+                            y = 0
+                        
+                        # Clamp voltage to safe range (0 to 3.3V for Raspberry Pi)
+                        voltage = max(0, min(VOLTAGE_LIMIT, float(y) if y is not None else 0))
+                        
+                        # Calculate duty cycle (0-100%) based on voltage
+                        duty_cycle = (voltage / VOLTAGE_LIMIT) * 100.0
+                        
+                        # Apply PWM to GPIO pin
+                        try:
+                            if GPIO_BACKEND == 'gpiozero':
+                                pwm_device.value = duty_cycle / 100.0
+                            elif GPIO_BACKEND == 'RPi.GPIO':
+                                pwm_device.ChangeDutyCycle(duty_cycle)
+                            else:  # mock
+                                pwm_device.ChangeDutyCycle(duty_cycle)
+                            
+                            # Update stored state
+                            if pin in pwm_devices:
+                                pwm_devices[pin]['duty_cycle'] = duty_cycle
+                        except Exception as pwm_err:
+                            log_event(f"PWM update error on pin {pin}: {str(pwm_err)}", 'error')
+                        
+                        # Stream data point to client
+                        data_point = {
+                            't': current_time,
+                            'x': x,
+                            'y': voltage,
+                            'duty': duty_cycle
+                        }
+                        yield f"data: {json.dumps(data_point)}\n\n"
+                        last_update = current_time
+                        
+                    except Exception as e:
+                        error_msg = f'Error in streaming loop: {str(e)}'
+                        log_event(error_msg, 'error')
+                        yield f"data: {json.dumps({'error': error_msg})}\n\n"
+                        break
+                
+                # Small sleep to avoid busy-waiting
+                time.sleep(0.01)
             
         except GeneratorExit:
-            pass
+            # Client closed connection
+            log_event(f"Graph streaming client disconnected from pin {pin}")
         except Exception as e:
-            log_event(f"Graph stream error: {str(e)}", 'error')
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            error_msg = f'Graph stream error: {str(e)}'
+            log_event(error_msg, 'error')
+            yield f"data: {json.dumps({'error': error_msg})}\n\n"
+        finally:
+            # Cleanup PWM device
+            try:
+                if pwm_device:
+                    if GPIO_BACKEND == 'gpiozero':
+                        pwm_device.close()
+                    elif GPIO_BACKEND == 'RPi.GPIO':
+                        pwm_device.stop()
+                    else:
+                        pwm_device.stop()
+                    log_event(f"PWM stopped on pin {pin}")
+            except Exception as cleanup_err:
+                log_event(f"Error stopping PWM: {str(cleanup_err)}", 'error')
+            
+            # Remove from tracking
+            try:
+                if pin in pwm_devices:
+                    del pwm_devices[pin]
+            except:
+                pass
     
     return Response(generate(), mimetype='text/event-stream', headers={
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
+        'Content-Type': 'text/event-stream',
         'Access-Control-Allow-Origin': '*'
     })
 

@@ -322,27 +322,46 @@
       let graphStreamSource = null;
 
       function startGraphStreaming() {
+        // Close any existing stream
         if (graphStreamSource) {
           graphStreamSource.close();
           graphStreamSource = null;
         }
+        
+        // Get selected GPIO pin
         const select = document.getElementById('graphGpioSelect');
         const pin = select && select.value ? parseInt(select.value) : null;
-        if (!pin) return;
+        if (!pin) {
+          console.error('No GPIO pin selected');
+          alert('Please select a GPIO pin from the dropdown');
+          state.isScanning = false;
+          document.getElementById('playBtn').innerText = 'Play';
+          return;
+        }
+        
+        // Get equation and parameters
         const eqn = document.getElementById('eqnInput').value;
+        if (!eqn || eqn.trim() === '') {
+          console.error('No equation entered');
+          alert('Please enter an equation');
+          state.isScanning = false;
+          document.getElementById('playBtn').innerText = 'Play';
+          return;
+        }
+        
         const freq = parseFloat(document.getElementById('speedInput').value) || 1.0;
-        const duration = state.viewport.xMax;
-        const sample_rate = 60;
         const x_max = state.viewport.xMax;
-
+        const sample_rate = 60;
+        
         const streamParams = {
           equation: eqn,
           frequency: freq,
-          duration: duration,
           pin: pin,
           sample_rate: sample_rate,
           x_max: x_max
         };
+        
+        console.log('Starting graph streaming with parameters:', streamParams);
 
         graphStreamSource = new EventSourcePolyfill('/api/graph/stream', {
           method: 'POST',
@@ -354,33 +373,46 @@
           try {
             // Parse JSON data from server
             const data = JSON.parse(event.data);
+            
             if (data.error) {
-              console.error('Stream error:', data.error);
+              console.error('Stream error from server:', data.error);
               return;
             }
-            // Data is in the format: {'t': ..., 'x': ..., 'y': ..., 'duty': ...}
-            document.getElementById('valVolts').innerText = parseFloat(data.y).toFixed(2);
-            document.getElementById('valX').innerText = parseFloat(data.x).toFixed(2);
-            document.getElementById('valDuty').innerText = parseFloat(data.duty).toFixed(1);
+            
+            // Data format: {'t': ..., 'x': ..., 'y': voltage, 'duty': duty_cycle}
+            if (data.y !== undefined) {
+              document.getElementById('valVolts').innerText = parseFloat(data.y).toFixed(2);
+              document.getElementById('valX').innerText = parseFloat(data.x).toFixed(2);
+              document.getElementById('valDuty').innerText = parseFloat(data.duty).toFixed(1);
+              
+              // Optionally log for debugging (comment out for production)
+              // console.log(`PWM Update: Pin=${document.getElementById('graphGpioSelect').value}, Voltage=${data.y.toFixed(2)}V, Duty=${data.duty.toFixed(1)}%`);
+            }
           } catch (e) {
-            console.error('Error parsing stream data:', e);
+            console.error('Error parsing stream data:', e, 'Raw data:', event.data);
           }
         };
         
         graphStreamSource.onerror = function(error) {
           console.error('Stream connection error:', error);
-          if (graphStreamSource) graphStreamSource.close();
-          graphStreamSource = null;
+          if (graphStreamSource) {
+            graphStreamSource.close();
+            graphStreamSource = null;
+          }
+          // Reset play button state
+          state.isScanning = false;
+          document.getElementById('playBtn').innerText = 'Play';
         };
+        
+        console.log('Graph streaming initiated on pin:', pin);
       }
 
       // Polyfill for EventSource with POST (since native EventSource only supports GET)
       function EventSourcePolyfill(url, options) {
         const xhr = new XMLHttpRequest();
         const method = (options && options.method) || 'GET';
-        xhr.open(method, url, true);
         
-        // Set headers
+        // Set up request headers
         if (options && options.headers) {
           for (const k in options.headers) {
             xhr.setRequestHeader(k, options.headers[k]);
@@ -389,65 +421,94 @@
         
         let listeners = {};
         let buffer = '';
+        let isActive = true;
         
-        xhr.onreadystatechange = function() {
-          if (xhr.readyState === 3 || xhr.readyState === 4) {
-            // Process response text
-            const responseText = xhr.responseText;
-            buffer += responseText.substring(buffer.length);
-            
-            // Split by double newline (SSE format)
-            const lines = buffer.split('\n\n');
-            
-            // Keep the last incomplete line in buffer
-            buffer = lines[lines.length - 1];
-            
-            // Process complete messages
-            for (let i = 0; i < lines.length - 1; i++) {
-              const line = lines[i];
-              if (line.startsWith('data:')) {
-                const data = line.slice(5).trim();
-                if (listeners['message']) {
-                  listeners['message']({ data: data });
-                }
-              }
-            }
-          }
-        };
-        
-        xhr.onerror = function() {
-          if (listeners['error']) {
-            listeners['error']({ type: 'error' });
+        // Handle streaming responses
+        xhr.onprogress = function() {
+          if (xhr.responseText) {
+            handleStreamData(xhr.responseText);
           }
         };
         
         xhr.onload = function() {
-          if (listeners['load']) {
-            listeners['load']({ type: 'load' });
+          isActive = false;
+          if (xhr.responseText) {
+            handleStreamData(xhr.responseText);
+          }
+          // Process any remaining buffered data
+          if (buffer.length > 0) {
+            processMessage(buffer);
+            buffer = '';
           }
         };
         
+        xhr.onerror = function() {
+          isActive = false;
+          if (listeners['error']) {
+            listeners['error']({ type: 'error', status: xhr.status });
+          }
+        };
+        
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 2) {
+            // Headers received
+            console.log('SSE connection opened');
+          }
+        };
+        
+        function handleStreamData(text) {
+          // Append new data to buffer
+          buffer += text.substring(buffer.length);
+          
+          // Split by double newline (SSE message delimiter)
+          const parts = buffer.split('\n\n');
+          
+          // Keep the last incomplete message in the buffer
+          buffer = parts[parts.length - 1];
+          
+          // Process complete messages
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (parts[i].trim().length > 0) {
+              processMessage(parts[i]);
+            }
+          }
+        }
+        
+        function processMessage(message) {
+          if (message.startsWith('data:')) {
+            const data = message.slice(5).trim();
+            if (data.length > 0 && listeners['message']) {
+              listeners['message']({ data: data });
+            }
+          }
+        }
+        
+        // Open request
+        xhr.open(method, url, true);
+        
         // Send request with body if provided
         const body = (options && options.body) ? options.body : null;
-        xhr.send(body);
+        try {
+          xhr.send(body);
+        } catch (e) {
+          console.error('Error sending SSE request:', e);
+          if (listeners['error']) {
+            listeners['error']({ type: 'error', message: e.message });
+          }
+        }
         
         // Public API
-        this.close = function() { 
+        this.close = function() {
+          isActive = false;
           try {
             xhr.abort();
           } catch (e) {}
         };
         
-        this.onmessage = null;
-        this.onerror = null;
-        this.onload = null;
-        
-        // Store listeners
+        // Property setters/getters for event handlers
         Object.defineProperty(this, 'onmessage', {
           set: function(handler) {
-            listeners['message'] = (e) => {
-              if (handler) handler(e);
-            };
+            listeners['message'] = handler;
           },
           get: function() {
             return listeners['message'];
@@ -456,9 +517,7 @@
         
         Object.defineProperty(this, 'onerror', {
           set: function(handler) {
-            listeners['error'] = (e) => {
-              if (handler) handler(e);
-            };
+            listeners['error'] = handler;
           },
           get: function() {
             return listeners['error'];
