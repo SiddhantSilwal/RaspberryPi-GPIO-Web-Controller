@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -230,7 +230,24 @@
 
         <!-- PWM Control -->
         <section class="control-panel">
-          <h3>〰 PWM Control</h3>
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 10px;
+            "
+          >
+            <h3 style="margin-bottom: 0">〰 PWM Control</h3>
+            <button
+              id="useGraphBtn"
+              class="btn btn-success"
+              style="margin-left: auto; min-width: 110px"
+              title="Open Graphing Tool"
+            >
+              Use Graph
+            </button>
+          </div>
 
           <div class="form-group">
             <label for="pwmPin">PWM Pin:</label>
@@ -303,6 +320,16 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var useGraphBtn = document.getElementById("useGraphBtn");
+        if (useGraphBtn) {
+          useGraphBtn.addEventListener("click", function () {
+            window.open("/graph", "_blank");
+          });
+        }
+      });
+    </script>
     <!-- Footer -->
     <footer class="footer">
       <div class="footer-content">

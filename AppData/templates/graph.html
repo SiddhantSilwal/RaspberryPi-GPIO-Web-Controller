@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>PWM Signal Tool</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/graph.css') }}"
+    />
+  </head>
+  <body>
+    <div id="graph-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="ui-wrapper">
+      <div class="panel" id="controls-left">
+        <div id="errorMsg" class="error-msg">Equation Error</div>
+        <div class="compact-row">
+          <input
+            type="text"
+            id="eqnInput"
+            class="eqn-input"
+            placeholder="Enter equation & press Enter"
+          />
+          <select id="exampleSelect">
+            <option value="" disabled selected>Presets</option>
+            <option value="1.65 + 1.65 * sin(x)">Sine Wave</option>
+            <option value="1.65 + 1.65 * cos(x)">Cosine Wave</option>
+            <option value="0.1 * x^2">Quadratic</option>
+            <option value="abs(x - 5)">Absolute</option>
+            <option value="exp(0.2 * x) - 1">Exponential</option>
+          </select>
+        </div>
+        <div class="compact-row">
+          <button class="primary" id="graphBtn">Graph</button>
+          <button id="playBtn">Play</button>
+          <button id="resetBtn">Reset</button>
+          <div class="dial-group">
+            <div class="dial-container" id="speedDial">
+              <svg class="dial-svg" viewBox="0 0 44 44">
+                <circle class="dial-bg" cx="22" cy="22" r="20"></circle>
+                <circle
+                  id="dialProgress"
+                  class="dial-progress"
+                  cx="22"
+                  cy="22"
+                  r="20"
+                ></circle>
+              </svg>
+            </div>
+            <input
+              type="number"
+              id="speedInput"
+              class="speed-input"
+              step="0.1"
+            />
+            <span class="unit">Hz</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="readout-right">
+        <div class="form-group" style="margin-bottom: 18px">
+          <label
+            for="graphGpioSelect"
+            style="color: var(--text-dim); font-size: 13px"
+            >GPIO Pin:</label
+          >
+          <select id="graphGpioSelect" class="form-control">
+            <option value="">Select PWM pin...</option>
+          </select>
+        </div>
+        <div class="readout-grid">
+          <div>
+            <div class="label">Time (X)</div>
+            <div class="value" id="valX">0.00</div>
+          </div>
+          <div>
+            <div class="label">Voltage</div>
+            <div class="value">
+              <span id="valVolts">0.00</span><span class="unit">V</span>
+            </div>
+          </div>
+          <div>
+            <div class="label">Duty Cycle</div>
+            <div class="value">
+              <span id="valDuty">0.0</span><span class="unit">%</span>
+            </div>
+          </div>
+          <div>
+            <div class="label">Hardware Limit</div>
+            <div class="value">3.30<span class="unit">V</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/graph.js') }}"></script>
+  </body>
+</html>

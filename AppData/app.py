@@ -167,6 +167,10 @@ def read_pin_value(pin):
 def index():
     return render_template('index.html')
 
+@app.route('/graph')
+def graph():
+    return render_template('graph.html')
+
 @app.route('/api/pins', methods=['GET'])
 def get_pins():
     """Get status of all configured pins"""
