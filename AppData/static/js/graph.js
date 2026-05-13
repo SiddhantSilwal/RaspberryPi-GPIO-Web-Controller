@@ -335,63 +335,135 @@
         const sample_rate = 60;
         const x_max = state.viewport.xMax;
 
-        fetch('/api/graph/stream', {
+        const streamParams = {
+          equation: eqn,
+          frequency: freq,
+          duration: duration,
+          pin: pin,
+          sample_rate: sample_rate,
+          x_max: x_max
+        };
+
+        graphStreamSource = new EventSourcePolyfill('/api/graph/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            equation: eqn,
-            frequency: freq,
-            duration: duration,
-            pin: pin,
-            sample_rate: sample_rate,
-            x_max: x_max
-          })
-        }).then(() => {
-          graphStreamSource = new EventSourcePolyfill('/api/graph/stream', {
-            headers: { 'Content-Type': 'application/json' }
-          });
-          graphStreamSource.onmessage = function(event) {
-            try {
-              // Data is in the format: {'t': ..., 'x': ..., 'y': ..., 'duty': ...}
-              const data = eval('(' + event.data.replace(/'/g, '"') + ')');
-              // Optionally, update the UI with real-time voltage (y) value
-              document.getElementById('valVolts').innerText = parseFloat(data.y).toFixed(2);
-              document.getElementById('valX').innerText = parseFloat(data.x).toFixed(2);
-              document.getElementById('valDuty').innerText = parseFloat(data.duty).toFixed(1);
-            } catch (e) {}
-          };
-          graphStreamSource.onerror = function() {
-            if (graphStreamSource) graphStreamSource.close();
-            graphStreamSource = null;
-          };
+          body: JSON.stringify(streamParams)
         });
+        
+        graphStreamSource.onmessage = function(event) {
+          try {
+            // Parse JSON data from server
+            const data = JSON.parse(event.data);
+            if (data.error) {
+              console.error('Stream error:', data.error);
+              return;
+            }
+            // Data is in the format: {'t': ..., 'x': ..., 'y': ..., 'duty': ...}
+            document.getElementById('valVolts').innerText = parseFloat(data.y).toFixed(2);
+            document.getElementById('valX').innerText = parseFloat(data.x).toFixed(2);
+            document.getElementById('valDuty').innerText = parseFloat(data.duty).toFixed(1);
+          } catch (e) {
+            console.error('Error parsing stream data:', e);
+          }
+        };
+        
+        graphStreamSource.onerror = function(error) {
+          console.error('Stream connection error:', error);
+          if (graphStreamSource) graphStreamSource.close();
+          graphStreamSource = null;
+        };
       }
 
       // Polyfill for EventSource with POST (since native EventSource only supports GET)
       function EventSourcePolyfill(url, options) {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', url, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
+        const method = (options && options.method) || 'GET';
+        xhr.open(method, url, true);
+        
+        // Set headers
         if (options && options.headers) {
-          for (const k in options.headers) xhr.setRequestHeader(k, options.headers[k]);
+          for (const k in options.headers) {
+            xhr.setRequestHeader(k, options.headers[k]);
+          }
         }
+        
         let listeners = {};
+        let buffer = '';
+        
         xhr.onreadystatechange = function() {
           if (xhr.readyState === 3 || xhr.readyState === 4) {
-            const lines = xhr.responseText.split('\n\n');
-            lines.forEach(line => {
+            // Process response text
+            const responseText = xhr.responseText;
+            buffer += responseText.substring(buffer.length);
+            
+            // Split by double newline (SSE format)
+            const lines = buffer.split('\n\n');
+            
+            // Keep the last incomplete line in buffer
+            buffer = lines[lines.length - 1];
+            
+            // Process complete messages
+            for (let i = 0; i < lines.length - 1; i++) {
+              const line = lines[i];
               if (line.startsWith('data:')) {
                 const data = line.slice(5).trim();
-                if (listeners['message']) listeners['message']({ data });
+                if (listeners['message']) {
+                  listeners['message']({ data: data });
+                }
               }
-            });
+            }
           }
         };
-        xhr.send(options && options.body ? options.body : null);
-        this.close = function() { xhr.abort(); };
+        
+        xhr.onerror = function() {
+          if (listeners['error']) {
+            listeners['error']({ type: 'error' });
+          }
+        };
+        
+        xhr.onload = function() {
+          if (listeners['load']) {
+            listeners['load']({ type: 'load' });
+          }
+        };
+        
+        // Send request with body if provided
+        const body = (options && options.body) ? options.body : null;
+        xhr.send(body);
+        
+        // Public API
+        this.close = function() { 
+          try {
+            xhr.abort();
+          } catch (e) {}
+        };
+        
         this.onmessage = null;
         this.onerror = null;
-        listeners['message'] = (e) => { if (this.onmessage) this.onmessage(e); };
+        this.onload = null;
+        
+        // Store listeners
+        Object.defineProperty(this, 'onmessage', {
+          set: function(handler) {
+            listeners['message'] = (e) => {
+              if (handler) handler(e);
+            };
+          },
+          get: function() {
+            return listeners['message'];
+          }
+        });
+        
+        Object.defineProperty(this, 'onerror', {
+          set: function(handler) {
+            listeners['error'] = (e) => {
+              if (handler) handler(e);
+            };
+          },
+          get: function() {
+            return listeners['error'];
+          }
+        });
       }
 
       // Hook into Play button
